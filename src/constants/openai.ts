@@ -58,4 +58,56 @@ export const OPENAI_MODEL_LIST: OPENAI_MODEL[] = [
     maxToken: 32_768,
     name: 'gpt-4-32k-0613',
   },
+  {
+    maxToken: 128_000,
+    name: 'gemini-1.5-flash-latest',
+  },
+  {
+    maxToken: 128_000,
+    name: 'Creative-g4t-offline-vision',
+  },
+  {
+    maxToken: 128_000,
+    name: 'bing',
+  },
+  {
+    maxToken: 128_000,
+    name: 'concise',
+  },
+  {
+    maxToken: 128_000,
+    name: '海螺(网长图识音合)',
+  },
+  {
+    maxToken: 128_000,
+    name: '跃问(联网识长)',
+  },
+  {
+    maxToken: 128_000,
+    name: '智谱(网画识长)',
+  },
+  {
+    maxToken: 128_000,
+    name: 'claude-3-haiku-20240307',
+  },
+  {
+    maxToken: 128_000,
+    name: 'deepseek_chat',
+  },
+  {
+    maxToken: 128_000,
+    name: '通义(画图识长)',
+  },
+  {
+    maxToken: 128_000,
+    name: '星火(画图识长)',
+  },
+  {
+    maxToken: 128_000,
+    name: 'kimi(识图长文)',
+  },
+  {
+    maxToken: 128_000,
+    name: 'command-r-plus',
+  },
 ];

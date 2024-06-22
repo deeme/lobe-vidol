@@ -1,7 +1,7 @@
 import { LOBE_VIDOL_DEFAULT_AGENT_ID } from '@/constants/agent';
 import { DEFAULT_USER_AVATAR } from '@/constants/common';
 import { useAgentStore } from '@/store/agent';
-import { useConfigStore } from '@/store/config';
+import { useSettingStore } from '@/store/setting';
 import { Agent } from '@/types/agent';
 import { ChatMessage } from '@/types/chat';
 import { Session } from '@/types/session';
@@ -41,17 +41,19 @@ const getAgentById = (s: SessionStore) => {
     if (agentId === LOBE_VIDOL_DEFAULT_AGENT_ID) {
       return agentStore.defaultAgent;
     }
-    return agentStore.getAgentById(agentId);
+    return agentStore.getAgentById(agentId || '');
   };
 };
 
-const currentAgent = (s: SessionStore): Agent | undefined => {
+const currentAgent = (s: SessionStore): Agent => {
   const { activeId } = s;
   const agentStore = useAgentStore.getState();
-  if (activeId === LOBE_VIDOL_DEFAULT_AGENT_ID) {
-    return agentStore.defaultAgent;
-  }
   return agentStore.getAgentById(activeId);
+};
+
+const currentAgentMeta = (s: SessionStore) => {
+  const agent = currentAgent(s);
+  return agent?.meta;
 };
 
 const currentChats = (s: SessionStore): ChatMessage[] => {
@@ -63,8 +65,8 @@ const currentChats = (s: SessionStore): ChatMessage[] => {
 
   const { messages } = session;
   return messages?.map((message) => {
-    const userAvatar = useConfigStore.getState().config.avatar;
-    const userNickName = useConfigStore.getState().config.nickName;
+    const userAvatar = useSettingStore.getState().config.avatar;
+    const userNickName = useSettingStore.getState().config.nickName;
     return {
       ...message,
       meta: {
@@ -108,13 +110,6 @@ const currentChatIDsWithGreetingMessage = (s: SessionStore): string[] => {
   return currentChats.map((item) => item.id);
 };
 
-const previousChats = (s: SessionStore, id: string): ChatMessage[] => {
-  const chatList = currentChats(s);
-  const index = chatList.findIndex((item) => item.id === id);
-  if (index === -1) return [];
-  return chatList.slice(0, index);
-};
-
 const currentChatsString = (s: SessionStore): string => {
   const session = currentSession(s);
   const agent = currentAgent(s);
@@ -154,6 +149,7 @@ const getLastMessageByAgentId = (s: SessionStore) => {
 export const sessionSelectors = {
   currentChatsWithGreetingMessage,
   filterSessionListIds,
+  currentAgentMeta,
   currentAgent,
   getAgentById,
   currentChatIDsWithGreetingMessage,
@@ -163,6 +159,5 @@ export const sessionSelectors = {
   currentChatsString,
   currentSession,
   currentSystemRole,
-  previousChats,
   sessionListIds,
 };

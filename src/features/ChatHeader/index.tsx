@@ -4,9 +4,9 @@ import React from 'react';
 import { Flexbox } from 'react-layout-kit';
 
 import AgentMeta from '@/components/agent/AgentMeta';
+import ShareButton from '@/features/Actions/ShareButton';
 import ToggleChatSideBar from '@/features/Actions/ToggleChatSideBar';
-import Video from '@/features/Actions/Video';
-import Voice from '@/features/Actions/Voice';
+import ToggleSessionList from '@/features/Actions/ToggleSessionList';
 import { sessionSelectors, useSessionStore } from '@/store/session';
 
 import { useStyles } from './style';
@@ -27,12 +27,11 @@ export default (props: Props) => {
       className={classNames(styles.header, className)}
     >
       <Space>
-        {/*<ToggleSessionList />*/}
+        <ToggleSessionList />
         <AgentMeta meta={currentAgent?.meta} />
       </Space>
       <Space>
-        <Voice key={'voice'} />
-        <Video key={'video'} />
+        <ShareButton key={'share'} />
         <ToggleChatSideBar key={'sidebar'} />
       </Space>
     </Flexbox>

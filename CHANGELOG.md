@@ -2,6 +2,214 @@
 
 # Changelog
 
+## [Version 0.12.0](https://github.com/lobehub/lobe-vidol/compare/v0.11.0...v0.12.0)
+
+<sup>Released on **2024-06-08**</sup>
+
+#### ✨ Features
+
+- **misc**: Support model select.
+
+#### 🐛 Bug Fixes
+
+- **misc**: Viewer model load.
+
+<br/>
+
+<details>
+<summary><kbd>Improvements and Fixes</kbd></summary>
+
+#### What's improved
+
+- **misc**: Support model select ([65fcaaa](https://github.com/lobehub/lobe-vidol/commit/65fcaaa))
+
+#### What's fixed
+
+- **misc**: Viewer model load ([decdfed](https://github.com/lobehub/lobe-vidol/commit/decdfed))
+
+</details>
+
+<div align="right">
+
+[![](https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square)](#readme-top)
+
+</div>
+
+## [Version 0.11.0](https://github.com/lobehub/lobe-vidol/compare/v0.10.1...v0.11.0)
+
+<sup>Released on **2024-06-08**</sup>
+
+#### ✨ Features
+
+- **misc**: Remove role cache, 下载订阅模型文件到本地加载., 优先使用本地模型文件，提高使用体验，支持 gpt-4o, 添加 dance 和 audio 下载，统一 storage 操作.
+
+#### 🐛 Bug Fixes
+
+- **misc**: 修复 audio 加载与 vrm loading 问题.
+
+<br/>
+
+<details>
+<summary><kbd>Improvements and Fixes</kbd></summary>
+
+#### What's improved
+
+- **misc**: Remove role cache ([9754be4](https://github.com/lobehub/lobe-vidol/commit/9754be4))
+- **misc**: 下载订阅模型文件到本地加载. ([83b35ee](https://github.com/lobehub/lobe-vidol/commit/83b35ee))
+- **misc**: 优先使用本地模型文件，提高使用体验 ([a564806](https://github.com/lobehub/lobe-vidol/commit/a564806))
+- **misc**: 支持 gpt-4o ([af1a724](https://github.com/lobehub/lobe-vidol/commit/af1a724))
+- **misc**: 添加 dance 和 audio 下载 ([292f9f2](https://github.com/lobehub/lobe-vidol/commit/292f9f2))
+- **misc**: 统一 storage 操作 ([0810fb5](https://github.com/lobehub/lobe-vidol/commit/0810fb5))
+
+#### What's fixed
+
+- **misc**: 修复 audio 加载与 vrm loading 问题 ([cc8b784](https://github.com/lobehub/lobe-vidol/commit/cc8b784))
+
+</details>
+
+<div align="right">
+
+[![](https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square)](#readme-top)
+
+</div>
+
+### [Version 0.10.1](https://github.com/lobehub/lobe-vidol/compare/v0.10.0...v0.10.1)
+
+<sup>Released on **2024-06-02**</sup>
+
+#### 🐛 Bug Fixes
+
+- **misc**: Add alert message, 更新 agent oss 地址.
+
+<br/>
+
+<details>
+<summary><kbd>Improvements and Fixes</kbd></summary>
+
+#### What's fixed
+
+- **misc**: Add alert message ([d6d657e](https://github.com/lobehub/lobe-vidol/commit/d6d657e))
+- **misc**: 更新 agent oss 地址 ([9a8a9ca](https://github.com/lobehub/lobe-vidol/commit/9a8a9ca))
+
+</details>
+
+<div align="right">
+
+[![](https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square)](#readme-top)
+
+</div>
+
+## [Version 0.10.0](https://github.com/lobehub/lobe-vidol/compare/v0.9.0...v0.10.0)
+
+<sup>Released on **2024-06-02**</sup>
+
+#### ✨ Features
+
+- **misc**: Add message smooth animation, 支持停止 chat message 生成，根据性别生成对应不同的默认触摸动作和语音，添加角色性别.
+
+#### 🐛 Bug Fixes
+
+- **misc**: Loading animation, 修复触摸反应表单创建，修复重新生成时的逻辑错误.
+
+<br/>
+
+<details>
+<summary><kbd>Improvements and Fixes</kbd></summary>
+
+#### What's improved
+
+- **misc**: Add message smooth animation ([35dfd8b](https://github.com/lobehub/lobe-vidol/commit/35dfd8b))
+- **misc**: 支持停止 chat message 生成 ([cb8f445](https://github.com/lobehub/lobe-vidol/commit/cb8f445))
+- **misc**: 根据性别生成对应不同的默认触摸动作和语音 ([25bf520](https://github.com/lobehub/lobe-vidol/commit/25bf520))
+- **misc**: 添加角色性别 ([6008d89](https://github.com/lobehub/lobe-vidol/commit/6008d89))
+
+#### What's fixed
+
+- **misc**: Loading animation ([e4532f9](https://github.com/lobehub/lobe-vidol/commit/e4532f9))
+- **misc**: 修复触摸反应表单创建 ([005b823](https://github.com/lobehub/lobe-vidol/commit/005b823))
+- **misc**: 修复重新生成时的逻辑错误 ([3e324e4](https://github.com/lobehub/lobe-vidol/commit/3e324e4))
+
+</details>
+
+<div align="right">
+
+[![](https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square)](#readme-top)
+
+</div>
+
+## [Version 0.9.0](https://github.com/lobehub/lobe-vidol/compare/v0.8.0...v0.9.0)
+
+<sup>Released on **2024-05-27**</sup>
+
+#### ✨ Features
+
+- **misc**: 支持删除触摸反应列表，支持添加反应列表，支持编辑反应列表，触摸设置迁移到角色编辑，触摸设置迁移到角色编辑.
+
+#### 🐛 Bug Fixes
+
+- **misc**: Agent viewer not resize with parent, 修复系统设置错位.
+
+<br/>
+
+<details>
+<summary><kbd>Improvements and Fixes</kbd></summary>
+
+#### What's improved
+
+- **misc**: 支持删除触摸反应列表 ([be66ad5](https://github.com/lobehub/lobe-vidol/commit/be66ad5))
+- **misc**: 支持添加反应列表 ([6a926fd](https://github.com/lobehub/lobe-vidol/commit/6a926fd))
+- **misc**: 支持编辑反应列表 ([217d2d2](https://github.com/lobehub/lobe-vidol/commit/217d2d2))
+- **misc**: 触摸设置迁移到角色编辑 ([d85e0ef](https://github.com/lobehub/lobe-vidol/commit/d85e0ef))
+- **misc**: 触摸设置迁移到角色编辑 ([d71cc0f](https://github.com/lobehub/lobe-vidol/commit/d71cc0f))
+
+#### What's fixed
+
+- **misc**: Agent viewer not resize with parent ([5090d9c](https://github.com/lobehub/lobe-vidol/commit/5090d9c))
+- **misc**: 修复系统设置错位 ([efa1598](https://github.com/lobehub/lobe-vidol/commit/efa1598))
+
+</details>
+
+<div align="right">
+
+[![](https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square)](#readme-top)
+
+</div>
+
+## [Version 0.8.0](https://github.com/lobehub/lobe-vidol/compare/v0.7.0...v0.8.0)
+
+<sup>Released on **2024-05-24**</sup>
+
+#### ✨ Features
+
+- **misc**: 添加 Discord Icon, 添加灰阶设定，添加错误处理逻辑.
+
+#### 🐛 Bug Fixes
+
+- **misc**: Config data lost.
+
+<br/>
+
+<details>
+<summary><kbd>Improvements and Fixes</kbd></summary>
+
+#### What's improved
+
+- **misc**: 添加 Discord Icon ([ffdccc2](https://github.com/lobehub/lobe-vidol/commit/ffdccc2))
+- **misc**: 添加灰阶设定 ([b7dd792](https://github.com/lobehub/lobe-vidol/commit/b7dd792))
+- **misc**: 添加错误处理逻辑 ([23b2d5d](https://github.com/lobehub/lobe-vidol/commit/23b2d5d))
+
+#### What's fixed
+
+- **misc**: Config data lost ([7ccca77](https://github.com/lobehub/lobe-vidol/commit/7ccca77))
+
+</details>
+
+<div align="right">
+
+[![](https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square)](#readme-top)
+
+</div>
+
 ## [Version 0.7.0](https://github.com/lobehub/lobe-vidol/compare/v0.6.0...v0.7.0)
 
 <sup>Released on **2024-05-20**</sup>

@@ -1,19 +1,15 @@
 import { Form, FormGroup, FormItem } from '@lobehub/ui';
-import { App, Button, Input, Segmented } from 'antd';
-import { ThemeMode, createStyles } from 'antd-style';
+import { createStyles } from 'antd-style';
 import classNames from 'classnames';
-import { isEqual } from 'lodash-es';
 import { Monitor, Settings2, User2Icon } from 'lucide-react';
 import React from 'react';
 
-import { MAX_NAME_LENGTH } from '@/constants/common';
+import ClearSession from '@/features/Actions/ClearSession';
+import ResetConfig from '@/features/Actions/ResetConfig';
+import BackgroundEffect from '@/features/Settings/features/BackgroundEffect';
+import NickName from '@/features/Settings/features/NickName';
+import ThemeSwatchesNetural from '@/features/Settings/features/ThemeSwatchesNetural';
 import ThemeSwatchesPrimary from '@/features/Settings/features/ThemeSwatchesPrimary';
-import { useSyncSettings } from '@/features/Settings/useSyncSettings';
-import { useAgentStore } from '@/store/agent';
-import { useConfigStore } from '@/store/config';
-import { useSessionStore } from '@/store/session';
-import { useThemeStore } from '@/store/theme';
-import { BackgroundEffect } from '@/types/config';
 
 import AvatarWithUpload from './features/AvatarWithUpload';
 
@@ -37,124 +33,32 @@ const useStyles = createStyles(({ css }) => ({
 const CommonConfig = (props: CommonConfigProps) => {
   const { style, className } = props;
   const { styles } = useStyles();
-  const [config, setConfig] = useConfigStore((s) => [s.config, s.setConfig], isEqual);
-  const clearAgentStorage = useAgentStore((s) => s.clearAgentStorage);
-  const [themeMode, setThemeMode] = useThemeStore((s) => [s.themeMode, s.setThemeMode]);
-  const clearSessions = useSessionStore((s) => s.clearSessions);
-  const resetConfig = useConfigStore((s) => s.resetConfig);
-  const { message, modal } = App.useApp();
-
-  const [form] = Form.useForm();
-
-  useSyncSettings(form);
-
-  const handleClear = () => {
-    modal.confirm({
-      cancelText: '取消',
-      centered: true,
-      content: '操作无法撤销，清除后数据将无法恢复，请慎重操作',
-      okButtonProps: {
-        danger: true,
-      },
-      okText: '确定',
-      onOk: () => {
-        clearSessions();
-        clearAgentStorage();
-        message.success('清除成功');
-      },
-      title: '确认清除所有会话消息?',
-    });
-  };
-
-  const handleReset = () => {
-    modal.confirm({
-      cancelText: '取消',
-      centered: true,
-      content: '操作无法撤销，重置后数据将无法恢复，请慎重操作',
-      okButtonProps: {
-        danger: true,
-      },
-      okText: '确定',
-      onOk: () => {
-        resetConfig();
-        message.success('重置成功');
-      },
-      title: '确认重置所有系统设置?',
-    });
-  };
 
   return (
     <div className={classNames(styles.config, className)} style={style}>
-      <Form
-        style={{ display: 'flex', flexGrow: 1 }}
-        initialValues={config}
-        form={form}
-        onValuesChange={setConfig}
-      >
-        <FormGroup icon={User2Icon} title={'用户设置'}>
+      <Form style={{ display: 'flex', flexGrow: 1 }}>
+        <FormGroup icon={User2Icon} title={'聊天设置'}>
           <FormItem desc={'自定义头像'} divider label={'头像'} name={'avatar'}>
             <AvatarWithUpload />
           </FormItem>
           <FormItem desc={'自定义昵称'} divider label={'昵称'} name={'nickName'}>
-            <Input
-              defaultValue={config.nickName}
-              placeholder={'请输入昵称'}
-              maxLength={MAX_NAME_LENGTH}
-              showCount
-              onChange={(e) => {
-                setConfig({ nickName: e.target.value });
-              }}
-            />
+            <NickName />
           </FormItem>
         </FormGroup>
         <FormGroup icon={Settings2} title={'主题设置'}>
           <FormItem desc={'主题色'} divider label={'自定义主题色'} name={'primaryColor'}>
             <ThemeSwatchesPrimary />
           </FormItem>
-          <FormItem desc={'自定义主题模式'} divider label={'主题模式'} name={'themeMode'}>
-            <Segmented
-              defaultValue={themeMode}
-              onChange={(value: ThemeMode) => {
-                setThemeMode(value as ThemeMode);
-              }}
-              options={[
-                {
-                  label: '🔆 亮色模式',
-                  value: 'light',
-                },
-                {
-                  label: '🌙 暗色模式',
-                  value: 'dark',
-                },
-                {
-                  label: '💻 跟随系统',
-                  value: 'auto',
-                },
-              ]}
-            />
-          </FormItem>
           <FormItem
-            desc={'自定义背景效果，可关闭以提升性能'}
+            desc={'不同色彩倾向的灰阶自定义'}
             divider
-            label={'背景效果'}
-            name={'backgroundEffect'}
+            label={'中性色'}
+            name={'neutralColor'}
           >
-            <Segmented
-              defaultValue={config.backgroundEffect}
-              onChange={(value: BackgroundEffect) => {
-                setConfig({ backgroundEffect: value });
-              }}
-              options={[
-                {
-                  label: '光辉',
-                  value: 'glow',
-                },
-                {
-                  label: '无背景',
-                  value: 'none',
-                },
-              ]}
-            />
+            <ThemeSwatchesNetural />
+          </FormItem>
+          <FormItem desc={'自定义背景效果'} divider label={'背景效果'} name={'backgroundEffect'}>
+            <BackgroundEffect />
           </FormItem>
         </FormGroup>
         <FormGroup icon={Monitor} title={'系统设置'}>
@@ -163,18 +67,14 @@ const CommonConfig = (props: CommonConfigProps) => {
             divider
             label={'清除所有会话消息'}
           >
-            <Button danger onClick={handleClear} type={'primary'}>
-              立即清除
-            </Button>
+            <ClearSession />
           </FormItem>
           <FormItem
-            desc={'将会重置所有系统设置，包括主题设置、背景效果、语言模型设置、窗口位置等'}
+            desc={'将会重置所有系统设置，包括主题设置、聊天设置、语言模型设置等'}
             divider
             label={'重置系统设置'}
           >
-            <Button danger onClick={handleReset} type={'primary'}>
-              立即重置
-            </Button>
+            <ResetConfig />
           </FormItem>
         </FormGroup>
       </Form>

@@ -1,4 +1,5 @@
 import { nanoid } from 'ai';
+import dayjs from 'dayjs';
 import { produce } from 'immer';
 import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
@@ -6,11 +7,13 @@ import { createWithEqualityFn } from 'zustand/traditional';
 import { StateCreator } from 'zustand/vanilla';
 
 import { LOBE_VIDOL_DEFAULT_AGENT_ID } from '@/constants/agent';
-import { LOADING_FLAG } from '@/constants/common';
+import { DEFAULT_USER_AVATAR_URL, LOADING_FLAG } from '@/constants/common';
 import { chatCompletion, handleSpeakAi } from '@/services/chat';
+import { shareService } from '@/services/share';
 import { Agent } from '@/types/agent';
 import { ChatMessage } from '@/types/chat';
 import { Session } from '@/types/session';
+import { ShareGPTConversation } from '@/types/share';
 import { fetchSEE } from '@/utils/fetch';
 
 import { initialState } from './initialState';
@@ -24,7 +27,20 @@ export enum ViewerModeEnum {
   Normal = 'Normal',
 }
 
+interface ShareMessage {
+  from: 'human' | 'gpt';
+  value: string;
+}
+
+const Footer: ShareMessage = {
+  from: 'gpt',
+  value: `Share from [**🤯 LobeVidol**](https://github.com/lobehub/lobe-vidol) - ${dayjs().format(
+    'YYYY-MM-DD',
+  )}`,
+};
+
 export interface SessionStore {
+  abortController?: AbortController;
   /**
    * 当前会话 ID
    */
@@ -40,7 +56,7 @@ export interface SessionStore {
   /**
    *  清空会话
    */
-  clearSessions: () => void;
+  clearSessionStorage: () => void;
   /**
    * 创建会话
    * @param agent
@@ -75,6 +91,7 @@ export interface SessionStore {
    * @returns
    */
   regenerateMessage: (id: string) => void;
+
   /**
    *  移除会话
    */
@@ -98,6 +115,12 @@ export interface SessionStore {
    * 触发 3D 渲染开关
    */
   setViewerMode: (mode: boolean) => void;
+  shareLoading: boolean;
+  shareToShareGPT: (props: { withSystemRole?: boolean }) => Promise<void>;
+  /**
+   * 停止生成消息
+   */
+  stopGenerateMessage: () => void;
   /**
    * 切换会话
    * @param agent
@@ -138,7 +161,7 @@ export const createSessonStore: StateCreator<SessionStore, [['zustand/devtools',
     const { updateSessionMessages } = get();
     updateSessionMessages([]);
   },
-  clearSessions: () => {
+  clearSessionStorage: () => {
     localStorage.removeItem(SESSION_STORAGE_KEY);
     set({ ...initialState });
   },
@@ -182,6 +205,12 @@ export const createSessonStore: StateCreator<SessionStore, [['zustand/devtools',
 
     updateSessionMessages(messages);
   },
+  stopGenerateMessage: () => {
+    const { abortController } = get();
+    if (!abortController) return;
+    abortController.abort();
+    set({ chatLoadingId: undefined });
+  },
   fetchAIResponse: async (messages, assistantId) => {
     const { dispatchMessage } = get();
     const currentSession = sessionSelectors.currentSession(get());
@@ -191,18 +220,23 @@ export const createSessonStore: StateCreator<SessionStore, [['zustand/devtools',
       return;
     }
 
-    set({ chatLoadingId: assistantId });
+    const abortController = new AbortController();
+
+    set({ chatLoadingId: assistantId, abortController });
 
     const fetcher = () => {
-      return chatCompletion({
-        messages: [
-          {
-            content: currentAgent.systemRole,
-            role: 'system',
-          } as ChatMessage,
-          ...messages,
-        ],
-      });
+      return chatCompletion(
+        {
+          messages: [
+            {
+              content: currentAgent.systemRole,
+              role: 'system',
+            } as ChatMessage,
+            ...messages,
+          ],
+        },
+        { signal: abortController.signal },
+      );
     };
 
     let receivedMessage = '';
@@ -260,14 +294,82 @@ export const createSessonStore: StateCreator<SessionStore, [['zustand/devtools',
     });
     set({ chatLoadingId: undefined });
   },
+  shareToShareGPT: async ({ withSystemRole }) => {
+    const messages = sessionSelectors.currentChats(get());
+    const agent = sessionSelectors.currentAgent(get());
+    const meta = sessionSelectors.currentAgentMeta(get());
+
+    const defaultMsg: ShareGPTConversation['items'] = [];
+    const showSystemRole = withSystemRole && !!agent.systemRole;
+    const shareMsgs = produce(defaultMsg, (draft) => {
+      draft.push({
+        from: 'gpt',
+        value: [
+          `${meta.avatar} **${meta.name}** - ${meta.description}`,
+          showSystemRole && '---',
+          showSystemRole && agent.systemRole,
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+      });
+
+      for (const i of messages) {
+        switch (i.role) {
+          case 'assistant': {
+            draft.push({ from: 'gpt', value: i.content });
+            break;
+          }
+
+          case 'user': {
+            draft.push({ from: 'human', value: i.content });
+            break;
+          }
+        }
+      }
+
+      draft.push(Footer);
+    });
+
+    set({ shareLoading: true });
+
+    const res = await shareService.createShareGPTUrl({
+      avatarUrl: DEFAULT_USER_AVATAR_URL,
+      items: shareMsgs,
+    });
+    set({ shareLoading: false });
+
+    window.open(res, '_blank');
+  },
   regenerateMessage: (id) => {
     const { dispatchMessage, fetchAIResponse } = get();
     const currentSession = sessionSelectors.currentSession(get());
     if (!currentSession) {
       return;
     }
+    const chats = sessionSelectors.currentChats(get());
+    const currentIndex = chats.findIndex((item) => item.id === id);
+    const currentMessage = chats[currentIndex];
 
-    const previousChats = sessionSelectors.previousChats(get(), id);
+    let contextMessages: ChatMessage[] = [];
+
+    switch (currentMessage.role) {
+      case 'user': {
+        contextMessages = chats.slice(0, currentIndex + 1);
+        break;
+      }
+      case 'assistant': {
+        // 消息是 AI 发出的因此需要找到它的 user 消息
+        const userId = currentMessage.parentId;
+        const userIndex = chats.findIndex((c) => c.id === userId);
+        // 如果消息没有 parentId，那么同 user/function 模式
+        contextMessages = chats.slice(0, userIndex < 0 ? currentIndex + 1 : userIndex + 1);
+        break;
+      }
+    }
+
+    const latestMsg = contextMessages.filter((s) => s.role === 'user').at(-1);
+
+    if (!latestMsg) return;
 
     const assistantId = nanoid();
 
@@ -276,12 +378,13 @@ export const createSessonStore: StateCreator<SessionStore, [['zustand/devtools',
       payload: {
         content: LOADING_FLAG,
         id: assistantId,
+        parentId: latestMsg.id,
         role: 'assistant', // 占位符
       },
       type: 'ADD_MESSAGE',
     });
 
-    fetchAIResponse(previousChats, assistantId);
+    fetchAIResponse(contextMessages, assistantId);
   },
   removeSession: (id) => {
     const { sessionList, activeId } = get();
@@ -325,12 +428,13 @@ export const createSessonStore: StateCreator<SessionStore, [['zustand/devtools',
       payload: {
         content: LOADING_FLAG,
         id: assistantId,
+        parentId: userId,
         role: 'assistant', // 占位符
       },
       type: 'ADD_MESSAGE',
     });
 
-    await fetchAIResponse(currentChats, assistantId);
+    fetchAIResponse(currentChats, assistantId);
   },
 
   setMessageInput: (messageInput) => {

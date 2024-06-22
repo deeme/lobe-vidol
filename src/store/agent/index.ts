@@ -7,11 +7,25 @@ import { createWithEqualityFn } from 'zustand/traditional';
 import { StateCreator } from 'zustand/vanilla';
 
 import { DEFAULT_AGENT_CONFIG, LOBE_VIDOL_DEFAULT_AGENT_ID } from '@/constants/agent';
-import { Agent, AgentMeta } from '@/types/agent';
+import {
+  DEFAULT_TOUCH_ACTION_CONFIG_FEMALE,
+  DEFAULT_TOUCH_ACTION_CONFIG_MALE,
+} from '@/constants/touch';
+import {
+  DEFAULT_TTS_CONFIG_FEMALE,
+  DEFAULT_TTS_CONFIG_MALE,
+  DEFAULT_TTS_CONFIG_OTHER,
+} from '@/constants/tts';
+import { TouchActionType, touchReducer } from '@/store/agent/reducers/touch';
+import { Agent, AgentMeta, GenderEnum } from '@/types/agent';
+import { TouchAction, TouchAreaEnum } from '@/types/touch';
 import { TTS } from '@/types/tts';
 import { mergeWithUndefined } from '@/utils/common';
+import { getModelPathByAgentId } from '@/utils/file';
+import storage from '@/utils/storage';
 
 import { initialState } from './initialState';
+import { agentSelectors } from './selectors/agent';
 
 const AGENT_STORAGE_KEY = 'vidol-chat-agent-storage';
 
@@ -21,13 +35,24 @@ export interface AgentStore {
    */
   activateAgent: (identifier: string) => void;
   /**
+   * 添加角色
+   * @param agent
+   */
+  addLocalAgent: (agent: Agent) => void;
+  /**
    * 清除角色配置
    */
-  clearAgentStorage: () => void;
+  clearAgentStorage: () => Promise<void>;
   /**
    * 创建新角色
    */
-  createNewAgent: () => void;
+  createNewAgent: (gender: GenderEnum) => void;
+  /**
+   * 创建触摸配置
+   * @param currentTouchArea
+   * @param action
+   */
+  createTouchAction: (currentTouchArea: TouchAreaEnum, action: TouchAction) => void;
   /**
    * 当前激活的角色
    */
@@ -41,24 +66,32 @@ export interface AgentStore {
    */
   defaultAgent: Agent;
   /**
+   * Touch Reducer
+   * @param payload
+   */
+  dispatchTouchAction: (payload: TouchActionType) => void;
+  /**
    * 根据 ID 获取角色
    * @param id
    */
-  getAgentById: (id?: string) => Agent | undefined;
+  getAgentById: (id: string) => Agent;
   /**
    * 本地角色列表
    */
   localAgentList: Agent[];
   /**
-   * 订阅角色
-   * @param agent
-   */
-  subscribe: (agent: Agent) => void;
-  /**
-   * 取消订阅角色
+   * 移除本地角色
    * @param agentId
    */
-  unsubscribe: (agentId: string) => void;
+  removeLocalAgent: (agentId: string) => Promise<void>;
+  /**
+   * 删除触摸配置
+   */
+  removeTouchAction: (currentTouchArea: TouchAreaEnum, index: number) => void;
+  /**
+   * 设置角色配置
+   */
+  setAgentConfig: (agent: Agent) => void;
   /**
    * 更新角色配置
    */
@@ -71,37 +104,79 @@ export interface AgentStore {
    * 更新角色 TTS
    */
   updateAgentTTS: (tts: DeepPartial<TTS>) => void;
+  /**
+   * 更新触摸配置
+   * @param currentTouchArea
+   * @param index
+   * @param action
+   */
+  updateTouchAction: (currentTouchArea: TouchAreaEnum, index: number, action: TouchAction) => void;
 }
+
+const getTouchConfigByGender = (gender: GenderEnum) => {
+  switch (gender) {
+    case GenderEnum.FEMALE: {
+      return DEFAULT_TOUCH_ACTION_CONFIG_FEMALE;
+    }
+    case GenderEnum.MALE: {
+      return DEFAULT_TOUCH_ACTION_CONFIG_MALE;
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const getTTSConfigByGender = (gender: GenderEnum) => {
+  switch (gender) {
+    case GenderEnum.FEMALE: {
+      return DEFAULT_TTS_CONFIG_FEMALE;
+    }
+    case GenderEnum.MALE: {
+      return DEFAULT_TTS_CONFIG_MALE;
+    }
+    default: {
+      return DEFAULT_TTS_CONFIG_OTHER;
+    }
+  }
+};
 
 const createAgentStore: StateCreator<AgentStore, [['zustand/devtools', never]]> = (set, get) => ({
   ...initialState,
   activateAgent: (identifier) => {
     set({ currentIdentifier: identifier });
   },
-  clearAgentStorage: () => {
+  clearAgentStorage: async () => {
     localStorage.removeItem(AGENT_STORAGE_KEY);
+    await storage.clear();
     set({ ...initialState });
   },
 
   deactivateAgent: () => {
     set({ currentIdentifier: undefined });
   },
-  getAgentById: (agentId?: string): Agent | undefined => {
-    if (!agentId) return undefined;
+  getAgentById: (agentId: string): Agent => {
     const { localAgentList, defaultAgent } = get();
 
     if (agentId === LOBE_VIDOL_DEFAULT_AGENT_ID) return defaultAgent;
 
     const currentAgent = localAgentList.find((item) => item.agentId === agentId);
-    if (!currentAgent) return undefined;
+    if (!currentAgent) return DEFAULT_AGENT_CONFIG;
 
     return currentAgent;
   },
-  createNewAgent: () => {
+  createNewAgent: (gender) => {
     const { localAgentList } = get();
+
     const newAgent: Agent = {
-      agentId: nanoid(),
       ...DEFAULT_AGENT_CONFIG,
+      meta: {
+        ...DEFAULT_AGENT_CONFIG.meta,
+        gender,
+      },
+      agentId: nanoid(),
+      touch: getTouchConfigByGender(gender),
+      tts: getTTSConfigByGender(gender),
     };
 
     const newList = produce(localAgentList, (draft) => {
@@ -123,7 +198,21 @@ const createAgentStore: StateCreator<AgentStore, [['zustand/devtools', never]]> 
     const agents = produce(localAgentList, (draft) => {
       const index = draft.findIndex((localAgent) => localAgent.agentId === currentIdentifier);
       if (index === -1) return;
-      draft[index] = mergeWithUndefined(draft[index], agent);
+      mergeWithUndefined(draft[index], agent);
+    });
+    set({ localAgentList: agents });
+  },
+  setAgentConfig: (agent) => {
+    const { localAgentList, currentIdentifier } = get();
+    if (currentIdentifier === LOBE_VIDOL_DEFAULT_AGENT_ID) {
+      set({ defaultAgent: agent });
+      return;
+    }
+
+    const agents = produce(localAgentList, (draft) => {
+      const index = draft.findIndex((localAgent) => localAgent.agentId === currentIdentifier);
+      if (index === -1) return;
+      draft[index] = agent;
     });
     set({ localAgentList: agents });
   },
@@ -131,11 +220,57 @@ const createAgentStore: StateCreator<AgentStore, [['zustand/devtools', never]]> 
     const { updateAgentConfig } = get();
     updateAgentConfig({ meta });
   },
+
+  dispatchTouchAction: (payload) => {
+    const { setAgentConfig } = get();
+    const agent = agentSelectors.currentAgentItem(get());
+    const touch = agentSelectors.currentAgentTouch(get());
+
+    if (!touch || !agent) {
+      return;
+    }
+
+    const config = touchReducer(touch, payload);
+
+    setAgentConfig({ ...agent, touch: config });
+  },
+  removeTouchAction: (currentTouchArea, index) => {
+    const { dispatchTouchAction } = get();
+    dispatchTouchAction({
+      type: 'DELETE_TOUCH_ACTION',
+      payload: {
+        touchArea: currentTouchArea,
+        index: index,
+      },
+    });
+  },
+  updateTouchAction: (currentTouchArea, index, action) => {
+    const { dispatchTouchAction } = get();
+    dispatchTouchAction({
+      type: 'UPDATE_TOUCH_ACTION',
+      payload: {
+        touchArea: currentTouchArea,
+        index: index,
+        action,
+      },
+    });
+  },
+  createTouchAction: (currentTouchArea, action) => {
+    const { dispatchTouchAction } = get();
+
+    dispatchTouchAction({
+      type: 'CREATE_TOUCH_ACTION',
+      payload: {
+        touchArea: currentTouchArea,
+        action,
+      },
+    });
+  },
   updateAgentTTS: (tts) => {
     const { updateAgentConfig } = get();
     updateAgentConfig({ tts });
   },
-  subscribe: (agent) => {
+  addLocalAgent: (agent) => {
     const { localAgentList } = get();
 
     const newList = produce(localAgentList, (draft) => {
@@ -147,7 +282,7 @@ const createAgentStore: StateCreator<AgentStore, [['zustand/devtools', never]]> 
     });
     set({ localAgentList: newList });
   },
-  unsubscribe: (agentId) => {
+  removeLocalAgent: async (agentId) => {
     const { localAgentList } = get();
     const newList = produce(localAgentList, (draft) => {
       const index = draft.findIndex((item) => item.agentId === agentId);
@@ -156,6 +291,7 @@ const createAgentStore: StateCreator<AgentStore, [['zustand/devtools', never]]> 
         draft.splice(index, 1);
       }
     });
+    await storage.removeItem(getModelPathByAgentId(agentId));
     set({ currentIdentifier: LOBE_VIDOL_DEFAULT_AGENT_ID, localAgentList: newList });
   },
 });

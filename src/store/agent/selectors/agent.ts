@@ -1,17 +1,19 @@
-import { LOBE_VIDOL_DEFAULT_AGENT_ID } from '@/constants/agent';
+import { DEFAULT_AGENT_CONFIG, LOBE_VIDOL_DEFAULT_AGENT_ID } from '@/constants/agent';
+import { EMPTY_TTS_CONFIG } from '@/constants/touch';
 import { Agent, AgentMeta } from '@/types/agent';
+import { TouchActionConfig } from '@/types/touch';
 import { TTS } from '@/types/tts';
 
 import { AgentStore } from '../index';
 
 const showSideBar = (s: AgentStore) => !!s.currentIdentifier;
 
-const currentAgentItem = (s: AgentStore): Agent | undefined => {
+const currentAgentItem = (s: AgentStore): Agent => {
   const { currentIdentifier, localAgentList, defaultAgent } = s;
   if (currentIdentifier === LOBE_VIDOL_DEFAULT_AGENT_ID) return defaultAgent;
 
   const currentAgent = localAgentList.find((item) => item.agentId === currentIdentifier);
-  if (!currentAgent) return undefined;
+  if (!currentAgent) return DEFAULT_AGENT_CONFIG;
 
   return currentAgent;
 };
@@ -28,6 +30,13 @@ const currentAgentTTS = (s: AgentStore): TTS | undefined => {
   if (!currentAgent) return undefined;
 
   return currentAgent.tts;
+};
+
+const currentAgentTouch = (s: AgentStore): TouchActionConfig | undefined => {
+  const currentAgent = currentAgentItem(s);
+  if (!currentAgent) return undefined;
+
+  return currentAgent.touch || EMPTY_TTS_CONFIG;
 };
 
 const agentListIds = (s: AgentStore): string[] => {
@@ -59,6 +68,13 @@ const currentAgentId = (s: AgentStore): string | undefined => {
   return currentAgent.agentId;
 };
 
+const getAgentModelById = (s: AgentStore) => {
+  return (id: string): string | undefined => {
+    const agent = s.getAgentById(id);
+    return agent?.meta.model;
+  };
+};
+
 const isDefaultAgent = (s: AgentStore) => {
   return (id: string): boolean => {
     const agent = s.getAgentById(id);
@@ -66,7 +82,8 @@ const isDefaultAgent = (s: AgentStore) => {
   };
 };
 
-const subscribed = (s: AgentStore) => (agentId: string) => {
+const subscribed = (s: AgentStore) => (agentId: string | undefined) => {
+  if (!agentId) return false;
   const { localAgentList } = s;
   const index = localAgentList.findIndex((item) => item.agentId === agentId);
 
@@ -77,7 +94,9 @@ export const agentSelectors = {
   currentAgentItem,
   currentAgentMeta,
   currentAgentTTS,
+  currentAgentTouch,
   filterAgentListIds,
+  getAgentModelById,
   agentListIds,
   isDefaultAgent,
   showSideBar,
